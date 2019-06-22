@@ -1,0 +1,20 @@
+# Editor configuration, see http://editorconfig.org
+
+# This file is inherited from [coding-templates](https://github.com/JoshLabs/coding-templates/blob/master/editorconfig/.py.editorconfig) that was created by [me](https://github.com/sandipagarwal)
+
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+max_line_length = 120
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{json,xml,yml,css,less,scss,sass}]
+indent_size = 2
+
+[*.{md,html}]
+max_line_length = off
