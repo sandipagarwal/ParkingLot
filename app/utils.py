@@ -44,7 +44,7 @@ def park_vehicle(registration_number, colour):
 
 def unpark_vehicle(slot_id):
     """
-    Parks the vehicle
+    Unparks the vehicle
 
     Parameters:
     slot_id (int): The slot id that needs to be unparked
@@ -58,3 +58,53 @@ def unpark_vehicle(slot_id):
         return True
     else:
         return False
+
+def parking_lot_status():
+    """
+    Status of the parking lot
+
+    Parameters:
+    None
+
+    Returns:
+    list: A list of dictionaries of parking slots data
+    """
+
+    parking_slots = []
+    for parking_slot in models.Parking.query.order_by(models.Parking.slot_id).filter(models.Parking.active.is_(True)).all():
+        parking_slots.append({
+            "slot_id": parking_slot.slot_id,
+            "registration_number": parking_slot.registration_number,
+            "colour": parking_slot.colour,
+        })
+    return parking_slots
+
+def info_for_vehicles_with_colour(colour, info):
+    """
+    Status of the parking lot
+
+    Parameters:
+    colour (string): The colour of the vehicle
+
+    Returns:
+    list: A list of registration numbers
+    """
+
+    return [
+        getattr(parking_slot, info) for parking_slot in models.Parking.query.order_by(models.Parking.slot_id).filter(models.Parking.active.is_(True), models.Parking.colour.ilike(colour)).all()
+    ]
+
+def slot_number_for_registration_number(registration_number):
+    """
+    Status of the parking lot
+
+    Parameters:
+    registration_number (string): The registration number of the vehicle
+
+    Returns:
+    int: Slot number of the parked vehicle or -1
+    """
+
+    parking_slot = models.Parking.query.order_by(models.Parking.slot_id).filter(models.Parking.active.is_(True), models.Parking.registration_number==registration_number).first()
+
+    return parking_slot.slot_id if parking_slot else -1
