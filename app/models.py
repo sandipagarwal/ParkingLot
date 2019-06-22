@@ -6,7 +6,7 @@ class Slot(db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)  # A slot can be marked
 
     def __repr__(self):
-        return '{}'.format(self.name)
+        return '{}'.format(self.id)
 
 
 class Parking(db.Model):
