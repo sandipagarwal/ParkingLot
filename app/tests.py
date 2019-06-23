@@ -4,6 +4,7 @@ import unittest
 from app import db, parking_lot, models, utils
 
 class ParkingLotTests(unittest.TestCase):
+    # TODO: This test class can be broken down into more classes and different files
 
     @classmethod
     def setUpClass(cls):
@@ -32,10 +33,19 @@ class ParkingLotTests(unittest.TestCase):
     def test_create_parking_lot(self):
 
         # Create New Parking Lot
-        utils.create_parking_lot(self.total_slots)
-        self.assertEqual(models.Slot.query.count(), self.total_slots)
+        self.assertEqual(utils.create_parking_lot(self.total_slots), self.total_slots)
 
-        # TODO: Test repeat call
+        # Park
+        self.assertEqual(utils.park_vehicle('KA-01-HH-1234', 'White'), 1)
+
+        # Test count
+        self.assertEqual(models.Parking.query.filter(models.Parking.active.is_(True)).count(), 1)
+
+        # Test repeat call
+        self.assertEqual(utils.create_parking_lot(self.total_slots), self.total_slots)
+
+        # Test count
+        self.assertEqual(models.Parking.query.filter(models.Parking.active.is_(True)).count(), 0)
 
     def test_park_vehicle(self):
         utils.create_parking_lot(self.total_slots)
@@ -238,3 +248,53 @@ class ParkingLotTests(unittest.TestCase):
 
         # But, test for KA-01-HH-9999
         self.assertEqual(utils.slot_number_for_registration_number("KA-01-HH-9999"), 2)
+
+    def test_process_command_input(self):
+        input_output = [
+            ['create_parking_lot 6', 'Created a parking lot with 6 slots'],
+            ['park KA-01-HH-1234 White', 'Allocated slot number: 1'],
+            ['park KA-01-HH-9999 White', 'Allocated slot number: 2'],
+            ['park KA-01-BB-0001 Black', 'Allocated slot number: 3'],
+            ['park KA-01-HH-7777 Red', 'Allocated slot number: 4'],
+            ['park KA-01-HH-2701 Blue', 'Allocated slot number: 5'],
+            ['park KA-01-HH-3141 Black', 'Allocated slot number: 6'],
+            ['leave 4', 'Slot number 4 is free'],
+            ['status', 'Slot No.    Registration No    Colour\n1           KA-01-HH-1234      White\n2           KA-01-HH-9999      White\n3           KA-01-BB-0001      Black\n5           KA-01-HH-2701      Blue\n6           KA-01-HH-3141      Black'],
+            ['park KA-01-P-333 White', 'Allocated slot number: 4'],
+            ['park DL-12-AA-9999 White', 'Sorry, parking lot is full'],
+            ['registration_numbers_for_cars_with_colour White', 'KA-01-HH-1234, KA-01-HH-9999, KA-01-P-333'],
+            ['slot_numbers_for_cars_with_colour White', '1, 2, 4'],
+            ['slot_number_for_registration_number KA-01-HH-3141', '6'],
+            ['slot_number_for_registration_number MH-04-AY-1111', 'Not found']
+        ]
+
+        for input_string, output_string in input_output:
+            self.assertEqual(utils.process_command_input(input_string), output_string)
+
+        self.assertEqual(utils.process_command_input('exit'), 0)
+        self.assertEqual(utils.process_command_input(''), 0)
+
+    def test_process_command_input_file(self):
+        output = [
+            'Created a parking lot with 6 slots',
+            'Allocated slot number: 1',
+            'Allocated slot number: 2',
+            'Allocated slot number: 3',
+            'Allocated slot number: 4',
+            'Allocated slot number: 5',
+            'Allocated slot number: 6',
+            'Slot number 4 is free',
+            'Slot No.    Registration No    Colour\n1           KA-01-HH-1234      White\n2           KA-01-HH-9999      White\n3           KA-01-BB-0001      Black\n5           KA-01-HH-2701      Blue\n6           KA-01-HH-3141      Black',
+            'Allocated slot number: 4',
+            'Sorry, parking lot is full',
+            'KA-01-HH-1234, KA-01-HH-9999, KA-01-P-333',
+            '1, 2, 4',
+            '6',
+            'Not found'
+        ]
+        with open(os.path.join(os.path.abspath(os.path.dirname(__file__)), '../fixtures/file_input.txt'), 'rU') as input_file:
+            output_index = 0
+            for command_input in input_file:
+                command_input = command_input.rstrip('\n').rstrip()
+                self.assertEqual(utils.process_command_input(command_input), output[output_index])
+                output_index += 1

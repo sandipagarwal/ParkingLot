@@ -6,12 +6,20 @@ def create_parking_lot(number_of_slots):
 
     Parameters:
     number_of_slots (int): The number of parking slots
-    """
-    # TODO: Check if the parking is already created or not. If yes, drop and create again.
 
-    for slot in xrange(number_of_slots):
-        db.session.add(models.Slot(id=slot + 1))
+    Returns:
+    int: number of slots created
+    """
+    # Check if the parking lot is already created or not. If yes, drop and create again.
+    if models.Slot.query.count() > 0:
+        models.Slot.query.delete()
+        models.Parking.query.delete()
+
+    for slot in xrange(1, number_of_slots+1):
+        db.session.add(models.Slot(id=slot))
         db.session.commit()
+
+    return number_of_slots
 
 def park_vehicle(registration_number, colour):
     """
@@ -102,9 +110,59 @@ def slot_number_for_registration_number(registration_number):
     registration_number (string): The registration number of the vehicle
 
     Returns:
-    int: Slot number of the parked vehicle or -1
+    int: Slot number of the parked vehicle or -1 (Not found)
     """
 
     parking_slot = models.Parking.query.order_by(models.Parking.slot_id).filter(models.Parking.active.is_(True), models.Parking.registration_number==registration_number).first()
 
     return parking_slot.slot_id if parking_slot else -1
+
+def process_command_input(command_input):
+    """
+    Processes the input command from shell or file
+
+    Parameters:
+    command_input (string): The command given in the parking lot game
+
+    Returns:
+    0 or None
+    """
+
+    if command_input in ['exit', '']:
+        return 0
+    else:
+        # Process the comman line input
+        command_inputs = command_input.split()
+
+        if command_inputs[0] == 'create_parking_lot': # create_parking_lot
+            message = 'Created a parking lot with {} slots'.format(create_parking_lot(int(command_inputs[1])))
+        elif command_inputs[0] == 'park':             # Park car
+            slot_id = park_vehicle(command_inputs[1], command_inputs[2])
+            if slot_id == -2:
+                message = 'This is a repeated parking. Car already in parking.'
+            elif slot_id == -1:
+                message =  'Sorry, parking lot is full'
+            else:
+                message =  'Allocated slot number: {}'.format(slot_id)
+        elif command_inputs[0] == 'leave':           # Unpark car
+            message = 'Slot number {} is free'.format(int(command_inputs[1])) if unpark_vehicle(int(command_inputs[1])) else 'The parking slot is inactive'
+        elif command_inputs[0] == 'status':          # Parking lot status
+            parking_slots_status = parking_lot_status()
+            if parking_slots_status:
+                message = 'Slot No.    Registration No    Colour'
+                for parking_slot_status in parking_slots_status:
+                    message =  '{}\n{}           {}      {}'.format(message, parking_slot_status['slot_id'], parking_slot_status['registration_number'], parking_slot_status['colour'])
+            else:
+                message = 'Parking Lot is empty'
+        elif command_inputs[0] == 'registration_numbers_for_cars_with_colour': # registration_numbers_for_cars_with_colour
+            registration_numbers = info_for_vehicles_with_colour(command_inputs[1], 'registration_number')
+            message = ', '.join(registration_numbers) if registration_numbers else 'Not found'
+        elif command_inputs[0] == 'slot_numbers_for_cars_with_colour':         # slot_numbers_for_cars_with_colour
+            slot_numbers = info_for_vehicles_with_colour(command_inputs[1], 'slot_id')
+            message = ', '.join(map(str, slot_numbers)) if slot_numbers else 'Not found'
+        elif command_inputs[0] == 'slot_number_for_registration_number':       # slot_number_for_registration_number
+            slot_id = slot_number_for_registration_number(command_inputs[1])
+            message = 'Not found' if slot_id == -1 else '{}'.format(slot_id)
+        else:
+            message = 'Invalid Command'
+        return message
